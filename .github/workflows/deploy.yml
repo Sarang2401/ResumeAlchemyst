@@ -1,0 +1,57 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-python-worker:
+    name: Deploy Python Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # Target Host (Private Subnet)
+          host: ${{ secrets.PYTHON_WORKER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Bastion Host (API Gateway)
+          proxy_host: ${{ secrets.GATEWAY_PUBLIC_IP }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          script: |
+            cd /opt/resumealchemyst
+            sudo git pull origin main
+            cd backend
+            source venv/bin/activate
+            pip install -r requirements.txt
+            sudo systemctl restart fastapi
+            echo "Python deployment complete!"
+
+  deploy-ts-worker:
+    name: Deploy Next.js Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # Target Host (Private Subnet)
+          host: ${{ secrets.TS_WORKER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Bastion Host (API Gateway)
+          proxy_host: ${{ secrets.GATEWAY_PUBLIC_IP }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          script: |
+            cd /opt/resumealchemyst
+            sudo git pull origin main
+            cd frontend
+            npm install
+            npm run build
+            sudo systemctl restart nextjs
+            echo "TypeScript deployment complete!"
