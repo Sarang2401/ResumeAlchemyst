@@ -101,8 +101,7 @@ export default function JobMatchPage() {
     }
 
     if (urlInput.toLowerCase().includes("linkedin.com")) {
-      toast.error("LinkedIn blocks automated requests. Please use the Bookmarklet scraper below.");
-      setActiveTab("bookmarklet");
+      toast.error("LinkedIn blocks automated requests. Please copy-paste the description manually into the Manual Paste tab.");
       return;
     }
 
@@ -120,9 +119,6 @@ export default function JobMatchPage() {
       setFetchingUrl(false);
     }
   };
-
-  // Draggable Bookmarklet Code
-  const bookmarkletCode = `javascript:(function(){const title=document.title.split('|')[0].split('-')[0].trim();let desc='';const selectors=['.jobs-description__container','.jobs-box__html-content','#job-details','.show-more-less-html__markup','.job-description'];for(const sel of selectors){const el=document.querySelector(sel);if(el){desc=el.innerText;break;}}if(!desc){const main=document.querySelector('main')||document.querySelector('article')||document.body;desc=main.innerText;}desc=desc.replace(/\\s+/g,' ').substring(0,4000).trim();const url='http://localhost:3000/job-match?import_title='+encodeURIComponent(title)+'&import_desc='+encodeURIComponent(desc);window.open(url,'_blank');})();`;
 
   return (
     <main className="min-h-screen bg-background flex flex-col">
@@ -148,9 +144,6 @@ export default function JobMatchPage() {
               </TabsTrigger>
               <TabsTrigger value="url" className="text-xs px-4 py-1.5 gap-1.5 rounded-lg">
                 <Globe className="w-3.5 h-3.5" /> Import from URL
-              </TabsTrigger>
-              <TabsTrigger value="bookmarklet" className="text-xs px-4 py-1.5 gap-1.5 rounded-lg">
-                <Sparkles className="w-3.5 h-3.5" /> LinkedIn Scraper
               </TabsTrigger>
             </TabsList>
 
@@ -225,59 +218,6 @@ export default function JobMatchPage() {
                       <><Link2 className="w-4 h-4 mr-2" /> Fetch Details</>
                     )}
                   </Button>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Tab: Bookmarklet Plugin */}
-            <TabsContent value="bookmarklet" className="space-y-4 outline-none">
-              <div className="space-y-4">
-                <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-xs text-muted-foreground leading-relaxed flex gap-3">
-                  <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p>
-                    Most major platforms (like LinkedIn) block automated scrapers. To solve this, we built a <strong>1-click browser bookmarklet scraper</strong> that grabs descriptions directly from your active browser tab, completely bypassing all blockers!
-                  </p>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-5 items-center bg-secondary/40 border border-border/40 rounded-xl p-6">
-                  {/* Step 1 */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">1</span>
-                      Install Scraper Link
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Drag the amber button below directly onto your web browser's <strong>Bookmarks Bar</strong>:
-                    </p>
-                    <div className="pt-2">
-                      <a
-                        href={bookmarkletCode}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toast.info("Please drag this button directly to your bookmarks bar!", { duration: 4000 });
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-white font-semibold text-xs tracking-wide shadow-md shadow-amber-500/10 cursor-grab active:cursor-grabbing border-b-2 border-amber-600 select-none"
-                      >
-                        <MousePointerClick className="w-4 h-4 animate-bounce" />
-                        Compare with Alchemyst
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">2</span>
-                      Compare in 1 Click
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Now, browse any job on <strong>LinkedIn</strong> (or Greenhouse, Lever, etc.) and simply click the bookmarklet in your bookmarks bar.
-                    </p>
-                    <p className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                      It instantly extracts the job details and pre-populates this page!
-                    </p>
-                  </div>
                 </div>
               </div>
             </TabsContent>

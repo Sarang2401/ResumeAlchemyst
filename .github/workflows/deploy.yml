@@ -26,6 +26,12 @@ jobs:
             cd /opt/resumealchemyst
             sudo git pull origin main
             cd backend
+            
+            # Securely inject environment variables
+            echo "LLM_PROVIDER=groq" > .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+            echo "GROQ_MODEL=llama-3.3-70b-versatile" >> .env
+            
             source venv/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart fastapi

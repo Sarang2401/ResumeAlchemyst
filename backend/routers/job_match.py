@@ -139,11 +139,11 @@ async def extract_jd_from_url(request: ExtractJDUrlRequest):
     if not url:
         raise HTTPException(status_code=400, detail="URL cannot be empty.")
     
-    # Simple block for LinkedIn to fail fast and nudge bookmarklet
+    # Simple block for LinkedIn to fail fast
     if "linkedin.com" in url.lower():
         raise HTTPException(
             status_code=403,
-            detail="LinkedIn actively blocks automated scrapers. Please use our simple Chrome Extension/Bookmarklet helper on this page to import this job instantly!"
+            detail="LinkedIn actively blocks automated scrapers. Please copy and paste the job description manually into the Manual Paste tab."
         )
         
     logger.info("extract_jd_url_start", url=url)
@@ -160,14 +160,14 @@ async def extract_jd_from_url(request: ExtractJDUrlRequest):
             if res.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to load job page. Host returned status code {res.status_code}. You can copy-paste the JD manually or use the browser Bookmarklet scraper."
+                    detail=f"Failed to load job page. Host returned status code {res.status_code}. Please copy and paste the job description manually."
                 )
             html_content = res.text
     except Exception as e:
         logger.error("extract_jd_url_fetch_failed", url=url, error=str(e))
         raise HTTPException(
             status_code=400,
-            detail=f"Unable to reach the job page URL. Please make sure the URL is valid, or use our Bookmarklet scraper/manual copy-paste as a fallback."
+            detail=f"Unable to reach the job page URL. Please make sure the URL is valid, or copy and paste the job description manually."
         )
 
     # Strip HTML to isolate text
