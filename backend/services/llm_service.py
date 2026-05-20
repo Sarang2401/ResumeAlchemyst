@@ -1,0 +1,114 @@
+"""
+LLM Service — OpenAI GPT-4.1-mini / Claude Sonnet integration.
+Supports structured JSON output with guardrailed prompting.
+Switch providers via LLM_PROVIDER env variable.
+"""
+
+import json
+import os
+from typing import Optional
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
+
+
+async def call_llm(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float = 0.1,
+    expect_json: bool = True,
+) -> str:
+    """
+    Call the configured LLM provider.
+    Returns raw string response (JSON string when expect_json=True).
+    Low temperature (0.1) for factual, consistent answers.
+    """
+    if LLM_PROVIDER == "anthropic":
+        return await _call_anthropic(system_prompt, messages, temperature)
+    else:
+        return await _call_openai(system_prompt, messages, temperature, expect_json)
+
+
+async def _call_openai(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float,
+    expect_json: bool,
+) -> str:
+    from openai import AsyncOpenAI
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable not set.")
+
+    client = AsyncOpenAI(api_key=api_key)
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    kwargs = dict(
+        model=OPENAI_MODEL,
+        messages=full_messages,
+        temperature=temperature,
+        max_tokens=MAX_TOKENS,
+    )
+    if expect_json:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    logger.info("llm_call_start", provider="openai", model=OPENAI_MODEL)
+    response = await client.chat.completions.create(**kwargs)
+    content = response.choices[0].message.content or ""
+    logger.info("llm_call_complete", tokens=response.usage.total_tokens if response.usage else 0)
+    return content
+
+
+async def _call_anthropic(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float,
+) -> str:
+    import anthropic
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set.")
+
+    client = anthropic.AsyncAnthropic(api_key=api_key)
+
+    logger.info("llm_call_start", provider="anthropic", model=ANTHROPIC_MODEL)
+    response = await client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=MAX_TOKENS,
+        system=system_prompt,
+        messages=messages,
+        temperature=temperature,
+    )
+    content = response.content[0].text if response.content else ""
+    logger.info("llm_call_complete", provider="anthropic")
+    return content
+
+
+def parse_llm_json(raw: str) -> dict:
+    """
+    Safely parse JSON from LLM response.
+    Handles cases where LLM wraps JSON in markdown code blocks.
+    """
+    # Strip markdown code fences
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.split("\n")
+        cleaned = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        # Try to extract JSON object from response
+        import re
+        json_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        raise ValueError(f"Could not parse JSON from LLM response: {raw[:200]}")
