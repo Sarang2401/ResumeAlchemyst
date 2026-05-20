@@ -11,9 +11,10 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic" | "gemini"
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
 
@@ -30,8 +31,11 @@ async def call_llm(
     """
     if LLM_PROVIDER == "anthropic":
         return await _call_anthropic(system_prompt, messages, temperature)
+    elif LLM_PROVIDER == "gemini":
+        return await _call_gemini(system_prompt, messages, temperature, expect_json)
     else:
         return await _call_openai(system_prompt, messages, temperature, expect_json)
+
 
 
 async def _call_openai(
@@ -89,6 +93,42 @@ async def _call_anthropic(
     )
     content = response.content[0].text if response.content else ""
     logger.info("llm_call_complete", provider="anthropic")
+    return content
+
+
+async def _call_gemini(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float,
+    expect_json: bool,
+) -> str:
+    from openai import AsyncOpenAI
+
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set.")
+
+    # We use Google's OpenAI-compatible endpoint
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    )
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    kwargs = dict(
+        model=GEMINI_MODEL,
+        messages=full_messages,
+        temperature=temperature,
+        max_tokens=MAX_TOKENS,
+    )
+    if expect_json:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    logger.info("llm_call_start", provider="gemini", model=GEMINI_MODEL)
+    response = await client.chat.completions.create(**kwargs)
+    content = response.choices[0].message.content or ""
+    logger.info("llm_call_complete", tokens=response.usage.total_tokens if response.usage else 0)
     return content
 
 
