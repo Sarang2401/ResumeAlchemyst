@@ -15,7 +15,7 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic" | "
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
