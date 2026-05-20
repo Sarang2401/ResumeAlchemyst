@@ -202,20 +202,17 @@ ResumeAlchemyst/
 
 ## Deployment
 
-### Frontend on Vercel
+This project is deployed across multiple VMs inside a **Private AWS Subnet** using **Terraform**, with an Nginx API Gateway exposing the inference endpoints to the internet.
 
-Push to GitHub, then import at [vercel.com](https://vercel.com). Set the environment variable:
+For full deployment instructions, architecture diagrams, and scaling strategies, please refer to the `devops-submission/` directory and the `docs/DESIGN_REPORT.md` file.
 
+To deploy the infrastructure from scratch:
+
+```bash
+cd devops-submission/terraform
+terraform init
+terraform apply
 ```
-NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
-```
-
-### Backend on Render
-
-1. Create a new Web Service at [render.com](https://render.com)
-2. Build command: `pip install -r requirements.txt`
-3. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables from `.env.example`
 
 ---
 
