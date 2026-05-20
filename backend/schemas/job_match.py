@@ -21,3 +21,13 @@ class JobMatchResponse(BaseModel):
     summary: str
     confidence: float
     session_id: str
+
+
+class ExtractJDUrlRequest(BaseModel):
+    url: str
+
+
+class ExtractJDUrlResponse(BaseModel):
+    job_title: str
+    job_description: str
+

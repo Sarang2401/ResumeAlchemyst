@@ -13,6 +13,7 @@ import {
   ArrowLeft, ChevronRight, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NavBar from "@/components/NavBar";
 
 export default function ResumePage() {
   const router = useRouter();
@@ -29,35 +30,14 @@ export default function ResumePage() {
 
   if (!resume) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Top bar */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-border glass">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
-            </div>
-            <span className="font-semibold text-sm">ResumeAlchemyst</span>
-          </div>
-        </div>
-        <Button
-          size="sm"
-          className="bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0"
-          onClick={() => router.push("/chat")}
-        >
-          <MessageSquare className="w-4 h-4 mr-2" /> Ask AI
-          <ChevronRight className="w-3 h-3 ml-1" />
-        </Button>
-      </nav>
+      <NavBar />
+
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Candidate header */}

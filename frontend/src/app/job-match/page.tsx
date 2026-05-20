@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import NavBar from "@/components/NavBar";
 import {
   ArrowLeft, Sparkles, Target, CheckCircle2,
   XCircle, AlertCircle, Loader2, Lightbulb, TrendingUp,
+  Globe, Link2, Info, FileText, ArrowRight, MousePointerClick
 } from "lucide-react";
 
 function FitScoreRing({ score }: { score: number }) {
-  const color = score >= 70 ? "#10b981" : score >= 45 ? "#f59e0b" : "#ef4444";
+  const color = score >= 70 ? "#f59e0b" : score >= 45 ? "#d97706" : "#b45309";
   const label = score >= 70 ? "Strong Fit" : score >= 45 ? "Partial Fit" : "Weak Fit";
   const r = 52, circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
@@ -35,7 +38,7 @@ function FitScoreRing({ score }: { score: number }) {
           <span className="text-xs text-muted-foreground">/ 100</span>
         </div>
       </div>
-      <Badge className="text-xs" style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}>
+      <Badge className="text-xs" style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}>
         {label}
       </Badge>
     </div>
@@ -50,10 +53,29 @@ export default function JobMatchPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<JobMatchResponse | null>(null);
 
+  // New URL scraper states
+  const [urlInput, setUrlInput] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [activeTab, setActiveTab] = useState("manual");
+
   useEffect(() => {
     const sid = sessionStorage.getItem("session_id");
     if (!sid) { router.push("/"); return; }
     setSessionId(sid);
+
+    // Read URL search params for bookmarklet prefill safely on client
+    const params = new URLSearchParams(window.location.search);
+    const importTitle = params.get("import_title");
+    const importDesc = params.get("import_desc");
+    if (importTitle || importDesc) {
+      if (importTitle) setJobTitle(decodeURIComponent(importTitle));
+      if (importDesc) {
+        setJd(decodeURIComponent(importDesc));
+        toast.success("Job description successfully imported via scraper plugin!");
+      }
+      // Clean query parameters so they don't persist on page reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, [router]);
 
   const runMatch = async () => {
@@ -63,6 +85,7 @@ export default function JobMatchPage() {
     try {
       const res = await api.matchJob(sessionId, jd, jobTitle || undefined);
       setResult(res);
+      toast.success("Job match analysis completed!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Matching failed.");
     } finally {
@@ -70,109 +93,257 @@ export default function JobMatchPage() {
     }
   };
 
+  const runUrlImport = async () => {
+    if (!urlInput.trim()) { toast.error("Please enter a job posting URL."); return; }
+    if (!urlInput.startsWith("http://") && !urlInput.startsWith("https://")) {
+      toast.error("URL must start with http:// or https://");
+      return;
+    }
+
+    if (urlInput.toLowerCase().includes("linkedin.com")) {
+      toast.error("LinkedIn blocks automated requests. Please use the Bookmarklet scraper below.");
+      setActiveTab("bookmarklet");
+      return;
+    }
+
+    setFetchingUrl(true);
+    try {
+      const data = await api.extractJdFromUrl(urlInput);
+      setJobTitle(data.job_title);
+      setJd(data.job_description);
+      setUrlInput("");
+      setActiveTab("manual");
+      toast.success("Successfully imported job details! Review below.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to extract job details.");
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
+
+  // Draggable Bookmarklet Code
+  const bookmarkletCode = `javascript:(function(){const title=document.title.split('|')[0].split('-')[0].trim();let desc='';const selectors=['.jobs-description__container','.jobs-box__html-content','#job-details','.show-more-less-html__markup','.job-description'];for(const sel of selectors){const el=document.querySelector(sel);if(el){desc=el.innerText;break;}}if(!desc){const main=document.querySelector('main')||document.querySelector('article')||document.body;desc=main.innerText;}desc=desc.replace(/\\s+/g,' ').substring(0,4000).trim();const url='http://localhost:3000/job-match?import_title='+encodeURIComponent(title)+'&import_desc='+encodeURIComponent(desc);window.open(url,'_blank');})();`;
+
   return (
-    <main className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b border-border glass">
-        <div className="flex items-center gap-3">
-          <Link href="/chat" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
-            <ArrowLeft className="w-4 h-4" /> Chat
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
-            </div>
-            <span className="font-semibold text-sm">Job Match</span>
-          </div>
-        </div>
-        <Badge variant="outline" className="text-xs gap-1"><Target className="w-3 h-3" /> Skill Matching</Badge>
-      </nav>
+    <main className="min-h-screen bg-background flex flex-col">
+      <NavBar />
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {/* Input panel */}
-        <div className="glass rounded-2xl p-6 animate-fade-in">
-          <h1 className="font-bold text-lg mb-1">Resume vs Job Description</h1>
-          <p className="text-muted-foreground text-sm mb-5">Paste a job description and get an instant fit score with skill gap analysis.</p>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={jobTitle}
-              onChange={(e) => setJobTitle(e.target.value)}
-              placeholder="Job title (optional) — e.g. Senior Backend Engineer"
-              className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm placeholder:text-muted-foreground/60 outline-none focus:border-purple-500/50 transition-colors"
-            />
-            <Textarea
-              id="jd-input"
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              placeholder="Paste the job description here..."
-              className="resize-none min-h-[180px] bg-secondary border-border rounded-xl text-sm placeholder:text-muted-foreground/60"
-            />
-          </div>
-          <Button
-            id="match-button"
-            onClick={runMatch}
-            disabled={loading || !jd.trim()}
-            className="mt-4 w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0"
-          >
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing...</> : <><Target className="w-4 h-4 mr-2" /> Run Match</>}
-          </Button>
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 w-full flex-1">
+        {/* Header Title */}
+        <div className="text-center sm:text-left space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Job Match & Gap Analysis
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Evaluate your active candidate against specific job descriptions using LLM semantic matching.
+          </p>
         </div>
 
-        {/* Results */}
+        {/* Input panel with dynamic Tabs */}
+        <div className="glass rounded-2xl p-6 animate-fade-in border border-border/40">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-secondary/70 border border-border/50 mb-5 w-full sm:w-auto p-1">
+              <TabsTrigger value="manual" className="text-xs px-4 py-1.5 gap-1.5 rounded-lg">
+                <FileText className="w-3.5 h-3.5" /> Manual Paste
+              </TabsTrigger>
+              <TabsTrigger value="url" className="text-xs px-4 py-1.5 gap-1.5 rounded-lg">
+                <Globe className="w-3.5 h-3.5" /> Import from URL
+              </TabsTrigger>
+              <TabsTrigger value="bookmarklet" className="text-xs px-4 py-1.5 gap-1.5 rounded-lg">
+                <Sparkles className="w-3.5 h-3.5" /> LinkedIn Scraper
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Tab: Manual Input */}
+            <TabsContent value="manual" className="space-y-4 outline-none">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-1 block">Job Position / Title</label>
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="e.g. Senior Backend Engineer"
+                    className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border text-sm placeholder:text-muted-foreground/60 outline-none focus:border-amber-500/50 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-1 block">Job Description Text</label>
+                  <Textarea
+                    id="jd-input"
+                    value={jd}
+                    onChange={(e) => setJd(e.target.value)}
+                    placeholder="Paste the job description details, responsibilities, and requirements here..."
+                    className="resize-none min-h-[200px] bg-secondary border-border rounded-xl text-sm placeholder:text-muted-foreground/60 focus:border-amber-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+              <Button
+                id="match-button"
+                onClick={runMatch}
+                disabled={loading || !jd.trim()}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-95 transition-opacity text-white border-0 py-5 rounded-xl text-sm font-semibold tracking-wide shadow-md shadow-amber-500/10"
+              >
+                {loading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Candidate Fit...</>
+                ) : (
+                  <><Target className="w-4 h-4 mr-2" /> Match Resume against JD</>
+                )}
+              </Button>
+            </TabsContent>
+
+            {/* Tab: URL Importer */}
+            <TabsContent value="url" className="space-y-4 outline-none">
+              <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-xs text-muted-foreground leading-relaxed flex gap-3">
+                <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p>
+                  Paste a public job posting URL from platforms like <strong>Greenhouse, Lever, Workday</strong>, or company career boards.
+                  Our AI will instantly read the page, strip boilerplate header/footer elements, and populate the job matcher inputs automatically.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium block">Job Posting URL</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Globe className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground/60" />
+                    <input
+                      type="url"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      placeholder="https://boards.greenhouse.io/company/jobs/12345..."
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary border border-border text-sm placeholder:text-muted-foreground/60 outline-none focus:border-amber-500/50 transition-colors"
+                    />
+                  </div>
+                  <Button
+                    onClick={runUrlImport}
+                    disabled={fetchingUrl || !urlInput.trim()}
+                    className="bg-secondary hover:bg-secondary/80 border border-border text-foreground font-medium py-2.5 px-5 rounded-xl text-sm"
+                  >
+                    {fetchingUrl ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing...</>
+                    ) : (
+                      <><Link2 className="w-4 h-4 mr-2" /> Fetch Details</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab: Bookmarklet Plugin */}
+            <TabsContent value="bookmarklet" className="space-y-4 outline-none">
+              <div className="space-y-4">
+                <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-xs text-muted-foreground leading-relaxed flex gap-3">
+                  <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p>
+                    Most major platforms (like LinkedIn) block automated scrapers. To solve this, we built a <strong>1-click browser bookmarklet scraper</strong> that grabs descriptions directly from your active browser tab, completely bypassing all blockers!
+                  </p>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-5 items-center bg-secondary/40 border border-border/40 rounded-xl p-6">
+                  {/* Step 1 */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">1</span>
+                      Install Scraper Link
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Drag the amber button below directly onto your web browser's <strong>Bookmarks Bar</strong>:
+                    </p>
+                    <div className="pt-2">
+                      <a
+                        href={bookmarkletCode}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toast.info("Please drag this button directly to your bookmarks bar!", { duration: 4000 });
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-white font-semibold text-xs tracking-wide shadow-md shadow-amber-500/10 cursor-grab active:cursor-grabbing border-b-2 border-amber-600 select-none"
+                      >
+                        <MousePointerClick className="w-4 h-4 animate-bounce" />
+                        Compare with Alchemyst
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">2</span>
+                      Compare in 1 Click
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Now, browse any job on <strong>LinkedIn</strong> (or Greenhouse, Lever, etc.) and simply click the bookmarklet in your bookmarks bar.
+                    </p>
+                    <p className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
+                      <ArrowRight className="w-3.5 h-3.5" />
+                      It instantly extracts the job details and pre-populates this page!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Results display */}
         {result && (
           <div className="space-y-4 animate-fade-in">
-            {/* Score */}
-            <div className="glass rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
+            {/* Score and summary */}
+            <div className="glass border border-border/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
               <FitScoreRing score={result.fit_score} />
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="font-bold text-lg mb-2">Match Analysis</h2>
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <h2 className="font-bold text-lg text-foreground">Semantic Fit Analysis</h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">{result.summary}</p>
-                <div className="flex gap-3 mt-3 justify-center sm:justify-start text-sm">
-                  <span className="text-emerald-400">{result.skill_gap.matched.length} matched</span>
-                  <span className="text-yellow-400">{result.skill_gap.partial.length} partial</span>
-                  <span className="text-red-400">{result.skill_gap.missing.length} missing</span>
+                <div className="flex gap-4 mt-3 justify-center sm:justify-start text-xs font-semibold">
+                  <span className="text-emerald-400 bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {result.skill_gap.matched.length} Matched
+                  </span>
+                  <span className="text-amber-400 bg-amber-500/5 px-2.5 py-1 rounded-lg border border-amber-500/10 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" /> {result.skill_gap.partial.length} Partial
+                  </span>
+                  <span className="text-red-400 bg-red-500/5 px-2.5 py-1 rounded-lg border border-red-500/10 flex items-center gap-1.5">
+                    <XCircle className="w-3.5 h-3.5 text-red-400" /> {result.skill_gap.missing.length} Missing
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Skill breakdown */}
+            {/* Skill gaps */}
             <div className="grid sm:grid-cols-3 gap-4">
               {result.skill_gap.matched.length > 0 && (
-                <div className="glass rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="glass border border-border/40 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-semibold text-emerald-400">Matched</span>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Matched Skills</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {result.skill_gap.matched.map((s) => (
-                      <Badge key={s} className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{s}</Badge>
+                      <Badge key={s} className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/10 hover:bg-emerald-500/15 cursor-default">{s}</Badge>
                     ))}
                   </div>
                 </div>
               )}
               {result.skill_gap.partial.length > 0 && (
-                <div className="glass rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm font-semibold text-yellow-400">Partial</span>
+                <div className="glass border border-border/40 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Partial Skills</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {result.skill_gap.partial.map((s) => (
-                      <Badge key={s} className="text-xs bg-yellow-500/10 text-yellow-400 border-yellow-500/20">{s}</Badge>
+                      <Badge key={s} className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/10 hover:bg-amber-500/15 cursor-default">{s}</Badge>
                     ))}
                   </div>
                 </div>
               )}
               {result.skill_gap.missing.length > 0 && (
-                <div className="glass rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="glass border border-border/40 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
                     <XCircle className="w-4 h-4 text-red-400" />
-                    <span className="text-sm font-semibold text-red-400">Missing</span>
+                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Missing Skills</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {result.skill_gap.missing.map((s) => (
-                      <Badge key={s} className="text-xs bg-red-500/10 text-red-400 border-red-500/20">{s}</Badge>
+                      <Badge key={s} className="text-xs bg-red-500/10 text-red-400 border-red-500/10 hover:bg-red-500/15 cursor-default">{s}</Badge>
                     ))}
                   </div>
                 </div>
@@ -181,16 +352,16 @@ export default function JobMatchPage() {
 
             {/* Recommendations */}
             {result.recommendations.length > 0 && (
-              <div className="glass rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-4 h-4 text-yellow-400" />
-                  <span className="font-semibold text-sm">Recommendations</span>
+              <div className="glass border border-border/40 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400" />
+                  <span className="font-semibold text-sm text-foreground">Gap Closure Recommendations</span>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {result.recommendations.map((rec, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <TrendingUp className="w-3.5 h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
-                      {rec}
+                    <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <TrendingUp className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{rec}</span>
                     </li>
                   ))}
                 </ul>

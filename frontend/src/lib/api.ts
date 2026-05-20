@@ -67,4 +67,15 @@ export const api = {
     });
     return handleResponse<JobMatchResponse>(res);
   },
+
+  /** Extract JD from a URL using backend scraper */
+  extractJdFromUrl: async (url: string): Promise<{ job_title: string; job_description: string }> => {
+    const res = await fetch(`${API_BASE}/match-job/extract-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    return handleResponse<{ job_title: string; job_description: string }>(res);
+  },
 };
+

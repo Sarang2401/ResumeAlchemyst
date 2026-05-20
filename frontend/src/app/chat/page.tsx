@@ -14,6 +14,7 @@ import { Send, Sparkles, User, Bot, ArrowLeft, FileText,
   Loader2, ChevronDown, Zap, Shield, AlertTriangle, Target,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import NavBar from "@/components/NavBar";
 
 const SUGGESTED_QUESTIONS = [
   "Summarize this candidate in 3 sentences",
@@ -174,36 +175,7 @@ export default function ChatPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b border-border glass">
-        <div className="flex items-center gap-3">
-          <Link href="/resume" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm">
-            <ArrowLeft className="w-4 h-4" /> Resume
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
-            </div>
-            <span className="font-semibold text-sm">AI Chat</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {resume && (
-            <>
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
-              <span className="text-xs text-muted-foreground hidden sm:inline">{resume.name || "Candidate"}</span>
-              <Badge variant="outline" className="text-xs hidden sm:flex items-center gap-1">
-                <Shield className="w-3 h-3 text-emerald-400" /> Hallucination-free
-              </Badge>
-            </>
-          )}
-          <Link href="/job-match" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs px-2 py-1 rounded-lg hover:bg-secondary ml-1">
-            <Target className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Job Match</span>
-          </Link>
-        </div>
-      </nav>
+      <NavBar />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
