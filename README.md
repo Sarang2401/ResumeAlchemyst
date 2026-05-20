@@ -1,58 +1,60 @@
-# ResumeAlchemyst 🧪
+# ResumeAlchemyst
 
-**Intelligent AI Resume Assistant** — parse resumes, ask anything, match candidates to jobs. Zero hallucinations.
+An AI-powered resume analysis tool built for recruiters and hiring teams. Upload a resume, ask questions, and get grounded answers drawn directly from the candidate's document.
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
-[![OpenAI](https://img.shields.io/badge/GPT--4.1--mini-Powered-412991?logo=openai)](https://openai.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
+[![Groq](https://img.shields.io/badge/LLaMA_3.3-via_Groq-F55036?logo=meta)](https://groq.com)
 
 ---
 
 ## What it does
 
-- 📄 **Resume Parsing** — Upload PDF or text. Extracts name, email, skills, experience, education, projects, and certifications into structured JSON.
-- 🤖 **Agentic Chat** — Ask anything about the candidate. The agent classifies intent, invokes the right tools, and grounds every answer in the resume.
-- 🛡️ **Guardrails** — Every response includes a confidence score and source attribution. Missing data is stated explicitly — never fabricated.
-- 🎯 **Job Matching** — Paste a JD and instantly get a fit score, skill gap breakdown, and actionable recommendations.
+- **Resume Parsing** — Upload a PDF or plain text file. The backend extracts name, contact info, skills, work experience, education, projects, and certifications into structured JSON.
+- **Agentic Chat** — Ask anything about the candidate. The agent classifies the question, selects the right internal tools, and grounds every answer in the resume data.
+- **Guardrails** — Every response includes a confidence score and source label. When data is missing, the system says so. It never makes things up.
+- **Job Matching** — Paste a job description to get a fit score, a skill gap breakdown (matched, partial, missing), and specific recommendations.
 
 ---
 
 ## Architecture
 
 ```
-Frontend (Next.js 15 + TypeScript + Tailwind + shadcn/ui)
-    │
-    ▼
+Frontend (Next.js 16 + TypeScript + Tailwind CSS)
+    |
+    v
 FastAPI Backend
-    │
-    ├── Resume Parser    (pdfplumber + regex heuristics)
-    ├── Skill Matcher    (alias resolution + fuzzy matching)
-    ├── Keyword Extractor (tech vocab + YoE extraction)
-    │
-    └── Agent Controller
-            │
-            ├── Intent Classification (regex patterns)
-            ├── Tool Selection        (intent → tools map)
-            ├── LLM Call              (OpenAI / Anthropic)
-            └── Guardrails            (validate + sanitize)
+    |
+    +-- Resume Parser      (pdfplumber + regex heuristics)
+    +-- Skill Matcher      (fuzzy matching + alias resolution)
+    +-- Keyword Extractor  (tech vocab + years-of-experience extraction)
+    |
+    +-- Agent Controller
+            |
+            +-- Intent Classification  (regex pattern scoring, no LLM cost)
+            +-- Tool Selection         (intent to tools map)
+            +-- LLM Call              (Groq / OpenAI / Anthropic / Ollama)
+            +-- Guardrails            (validate, sanitize, enforce schema)
 ```
 
-**Agent flow per query:**
-1. Query received → intent classified
-2. Relevant tools selected and invoked
-3. Tool output injected into LLM context
-4. LLM generates grounded answer (JSON mode)
-5. Guardrails validate confidence, source, and completeness
-6. Structured response returned
+**Agent flow for each query:**
+
+1. User message received, intent classified (skill check, experience, education, fit, general)
+2. Relevant tools selected and executed
+3. Tool output + resume context injected into LLM prompt
+4. LLM generates a grounded answer in JSON mode
+5. Guardrails validate the response: confidence clamped, source checked, fabrication signals detected
+6. Structured response returned to frontend
 
 ---
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
+
 - Python 3.11+
 - Node.js 18+
-- OpenAI API key (or Anthropic)
+- A Groq API key (free at [console.groq.com](https://console.groq.com))
 
 ### Backend
 
@@ -62,9 +64,8 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# Set up env
 copy .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Open .env and set your GROQ_API_KEY
 
 uvicorn main:app --reload --port 8000
 ```
@@ -73,16 +74,15 @@ uvicorn main:app --reload --port 8000
 
 ```powershell
 cd frontend
-copy .env.example .env.local
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+API explorer: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### Or use the start scripts:
+### Start scripts (alternative)
 
 ```powershell
 # Terminal 1
@@ -94,68 +94,72 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
+## LLM Provider Configuration
+
+The backend supports multiple providers. Set `LLM_PROVIDER` in `backend/.env`:
+
+| Provider | Key | Model |
+|---|---|---|
+| `groq` (default) | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-2.0-flash` |
+| `openai` | `OPENAI_API_KEY` | `gpt-4.1-mini` |
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-4-5` |
+| `ollama` | none | `llama3` (local) |
+
+Example `.env` for Groq:
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+---
+
 ## API Reference
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/upload-resume` | Upload PDF or text resume |
+| `POST` | `/upload-resume` | Upload PDF or text resume, start session |
 | `POST` | `/chat` | Send a message to the AI agent |
-| `GET` | `/session/{id}` | Retrieve session state |
+| `GET` | `/session/{id}` | Get current session state |
 | `POST` | `/match-job` | Match resume against a job description |
 | `GET` | `/health` | Health check |
 
-### Response schema (chat)
+### Chat response schema
 
 ```json
 {
-  "answer": "The candidate has 4 years of Python experience.",
+  "answer": "The candidate has 3 years of Python experience across two roles.",
   "confidence": 0.92,
   "source": "resume",
   "missing_data": [],
-  "tools_used": ["skill_matcher", "keyword_extractor"],
+  "tools_used": ["keyword_extractor"],
   "session_id": "abc-123"
 }
 ```
 
 ---
 
-## Guardrails Design
-
-| Rule | Implementation |
-|------|---------------|
-| No fabrication | Source must be traceable to resume |
-| Missing data | Listed in `missing_data[]`, never guessed |
-| Low confidence | `< 0.5` → "Insufficient information available." |
-| Fabrication signals | "I think", "probably" → confidence downgraded |
-| Source attribution | `"resume"` or `"inference"` on every response |
-
----
-
 ## Internal Tools
 
-| Tool | Purpose |
-|------|---------|
-| **Resume Parser** | PDF/text → structured JSON (pdfplumber + regex) |
-| **Skill Matcher** | Required skills vs resume skills (fuzzy + alias-aware) |
-| **Keyword Extractor** | Tech stack, domains, tools, years-of-experience |
+| Tool | What it does |
+|------|-------------|
+| **Resume Parser** | Converts PDF or text to structured JSON using pdfplumber and regex |
+| **Skill Matcher** | Compares required skills vs resume skills with alias resolution and fuzzy scoring |
+| **Keyword Extractor** | Pulls out tech stack, domains, tools, and years-of-experience mentions |
 
 ---
 
-## Deployment
+## Guardrails
 
-### Frontend → Vercel
-
-```bash
-# Push to GitHub, then import at vercel.com
-# Set env: NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
-```
-
-### Backend → Render
-
-1. Create a new **Web Service** on [render.com](https://render.com)
-2. Set **Build command**: `pip install -r requirements.txt`
-3. Set **Start command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables from `.env.example`
+| Rule | How it is enforced |
+|------|--------------------|
+| No fabrication | Source must trace back to resume; "Not mentioned in resume." is the fallback |
+| Missing data | Listed in `missing_data[]`, not guessed |
+| Low confidence | Confidence below 0.5 prepends "Insufficient information available." |
+| Hedging language | "I think", "probably", "likely has" trigger a confidence downgrade |
+| Source attribution | Every response is labeled `resume`, `inference`, or `insufficient` |
 
 ---
 
@@ -163,35 +167,55 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ```
 ResumeAlchemyst/
-├── frontend/           # Next.js 15 app
-│   └── src/
-│       ├── app/        # Pages: /, /resume, /chat, /job-match
-│       ├── lib/        # API client + TypeScript types
-│       └── components/ # shadcn/ui components
-├── backend/
-│   ├── main.py         # FastAPI entry point
-│   ├── agents/         # Agent controller + orchestration
-│   ├── tools/          # Resume parser, skill matcher, keyword extractor
-│   ├── services/       # LLM service + guardrails
-│   ├── memory/         # Session store (in-memory, TTL-based)
-│   ├── routers/        # API route handlers
-│   ├── schemas/        # Pydantic models
-│   └── prompts/        # LLM system prompts
-├── scripts/            # Local dev start scripts
-└── docs/               # Architecture docs
++-- frontend/
+|   +-- src/
+|       +-- app/          # Pages: /, /resume, /chat, /job-match
+|       +-- lib/          # API client, TypeScript types
+|       +-- components/   # UI components (shadcn/ui + custom)
++-- backend/
+|   +-- main.py           # FastAPI app entry point + .env loader
+|   +-- agents/           # Orchestrator: intent, tools, LLM, guardrails
+|   +-- tools/            # Resume parser, skill matcher, keyword extractor
+|   +-- services/         # LLM service (multi-provider) + guardrails
+|   +-- memory/           # In-memory session store with TTL
+|   +-- routers/          # API route handlers
+|   +-- schemas/          # Pydantic models for request/response
+|   +-- prompts/          # LLM system prompt and tool context templates
++-- scripts/              # Local dev start scripts
++-- docs/                 # Architecture notes
 ```
 
 ---
 
-## Design Tradeoffs
+## Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| In-memory sessions | Simple, fast, zero dependencies. Sufficient for demo/portfolio scale. |
-| Regex intent classification | No LLM cost per request. Fast, predictable, debuggable. |
-| pdfplumber over cloud OCR | No external API cost. Works offline. |
-| Exact + fuzzy skill matching | Handles typos and aliases without embedding API cost. |
-| JSON mode for LLM | Enforces structured output, enables guardrail validation. |
+| In-memory sessions | Fast, zero dependencies, no database needed for a demo-scale tool |
+| Regex intent classification | Avoids an extra LLM call per message; cheaper and more predictable |
+| pdfplumber over cloud OCR | No external API cost, works offline, handles most structured PDFs |
+| Fuzzy + alias skill matching | Handles abbreviations (e.g. "JS" = "JavaScript") without embedding costs |
+| JSON mode for LLM output | Enforces structured output so guardrails can reliably parse and validate |
+| Multi-provider LLM routing | Swap providers in one env variable; no code change needed |
+
+---
+
+## Deployment
+
+### Frontend on Vercel
+
+Push to GitHub, then import at [vercel.com](https://vercel.com). Set the environment variable:
+
+```
+NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+```
+
+### Backend on Render
+
+1. Create a new Web Service at [render.com](https://render.com)
+2. Build command: `pip install -r requirements.txt`
+3. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. Add environment variables from `.env.example`
 
 ---
 

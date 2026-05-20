@@ -10,10 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Send, Sparkles, User, Bot, ArrowLeft, FileText,
-  Loader2, ChevronDown, Zap, Shield, AlertTriangle,
+import { Send, Sparkles, User, Bot, ArrowLeft, FileText,
+  Loader2, ChevronDown, Zap, Shield, AlertTriangle, Target,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 const SUGGESTED_QUESTIONS = [
   "Summarize this candidate in 3 sentences",
@@ -67,7 +67,18 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             ? "bg-purple-600/20 border border-purple-500/30 text-foreground rounded-tr-sm"
             : "glass text-foreground rounded-tl-sm"
           }`}>
-          {msg.content}
+          {isUser ? (
+            msg.content
+          ) : (
+            <div className="prose prose-invert prose-sm max-w-none
+              prose-p:my-1 prose-p:leading-relaxed
+              prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5
+              prose-strong:text-foreground prose-strong:font-semibold
+              prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+            ">
+              <ReactMarkdown>{msg.content}</ReactMarkdown>
+            </div>
+          )}
         </div>
         {!isUser && (msg.source || msg.confidence !== undefined) && (
           <div className="px-1 space-y-1">
@@ -177,15 +188,21 @@ export default function ChatPage() {
             <span className="font-semibold text-sm">AI Chat</span>
           </div>
         </div>
-        {resume && (
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
-            <span className="text-xs text-muted-foreground hidden sm:inline">{resume.name || "Candidate"}</span>
-            <Badge variant="outline" className="text-xs hidden sm:flex items-center gap-1">
-              <Shield className="w-3 h-3 text-emerald-400" /> Hallucination-free
-            </Badge>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {resume && (
+            <>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
+              <span className="text-xs text-muted-foreground hidden sm:inline">{resume.name || "Candidate"}</span>
+              <Badge variant="outline" className="text-xs hidden sm:flex items-center gap-1">
+                <Shield className="w-3 h-3 text-emerald-400" /> Hallucination-free
+              </Badge>
+            </>
+          )}
+          <Link href="/job-match" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs px-2 py-1 rounded-lg hover:bg-secondary ml-1">
+            <Target className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Job Match</span>
+          </Link>
+        </div>
       </nav>
 
       {/* Messages */}

@@ -62,7 +62,7 @@ export default function HomePage() {
           <span className="font-semibold text-sm tracking-tight">ResumeAlchemyst</span>
         </div>
         <Badge variant="outline" className="text-xs text-muted-foreground hidden sm:flex">
-          v1.0 · Powered by GPT-4.1-mini
+          v1.0 · LLaMA 3.3 via Groq
         </Badge>
       </nav>
 
