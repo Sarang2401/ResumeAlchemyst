@@ -182,7 +182,7 @@ export default function ChatPage() {
           </Link>
           <Separator orientation="vertical" className="h-4" />
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-semibold text-sm">AI Chat</span>
@@ -278,7 +278,7 @@ export default function ChatPage() {
               id="send-button"
               onClick={() => sendMessage()}
               disabled={!input.trim() || loading}
-              className="bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition-opacity text-white border-0 h-12 w-12 p-0 rounded-xl flex-shrink-0"
+              className="bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0 h-12 w-12 p-0 rounded-xl flex-shrink-0"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>

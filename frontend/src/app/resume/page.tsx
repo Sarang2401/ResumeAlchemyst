@@ -43,7 +43,7 @@ export default function ResumePage() {
           </Link>
           <Separator orientation="vertical" className="h-4" />
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-semibold text-sm">ResumeAlchemyst</span>
@@ -51,7 +51,7 @@ export default function ResumePage() {
         </div>
         <Button
           size="sm"
-          className="bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition-opacity text-white border-0"
+          className="bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0"
           onClick={() => router.push("/chat")}
         >
           <MessageSquare className="w-4 h-4 mr-2" /> Ask AI
@@ -238,7 +238,7 @@ export default function ResumePage() {
               <p className="text-muted-foreground text-sm">Chat with the AI about this candidate.</p>
             </div>
             <Button
-              className="bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition-opacity text-white border-0 w-full sm:w-auto"
+              className="bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0 w-full sm:w-auto"
               onClick={() => router.push("/chat")}
             >
               <MessageSquare className="w-4 h-4 mr-2" /> Open AI Chat

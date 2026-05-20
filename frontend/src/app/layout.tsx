@@ -6,10 +6,10 @@ import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "ResumeAlchemyst — AI Resume Assistant",
+  title: "ResumeAlchemyst — Resume Analysis for Hiring Teams",
   description:
-    "Intelligent AI-powered resume analysis for recruiters. Parse resumes, ask questions, match candidates to jobs — with zero hallucinations.",
-  keywords: ["resume parser", "AI recruiter", "candidate analysis", "skill matching"],
+    "Upload a resume and ask anything about the candidate. Structured answers, confidence scores, and source attribution on every response.",
+  keywords: ["resume analysis", "candidate screening", "skill matching", "hiring tool"],
 };
 
 export default function RootLayout({

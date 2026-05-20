@@ -79,7 +79,7 @@ export default function JobMatchPage() {
           </Link>
           <Separator orientation="vertical" className="h-4" />
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-500 to-amber-300 flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-semibold text-sm">Job Match</span>
@@ -113,7 +113,7 @@ export default function JobMatchPage() {
             id="match-button"
             onClick={runMatch}
             disabled={loading || !jd.trim()}
-            className="mt-4 w-full bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 transition-opacity text-white border-0"
+            className="mt-4 w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:opacity-90 transition-opacity text-white border-0"
           >
             {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing...</> : <><Target className="w-4 h-4 mr-2" /> Run Match</>}
           </Button>
