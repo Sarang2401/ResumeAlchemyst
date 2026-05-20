@@ -1,6 +1,6 @@
 # ResumeAlchemyst
 
-An AI-powered resume analysis tool built for recruiters and hiring teams. Upload a resume, ask questions, and get grounded answers drawn directly from the candidate's document.
+An AI-powered resume analysis tool built for recruiters and hiring teams. Upload a resume, ask questions, and get grounded answers drawn directly from the candidate's documents.
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
