@@ -11,10 +11,12 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic" | "gemini"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" | "anthropic" | "gemini" | "groq" | "ollama"
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
 
@@ -33,6 +35,10 @@ async def call_llm(
         return await _call_anthropic(system_prompt, messages, temperature)
     elif LLM_PROVIDER == "gemini":
         return await _call_gemini(system_prompt, messages, temperature, expect_json)
+    elif LLM_PROVIDER == "groq":
+        return await _call_groq(system_prompt, messages, temperature, expect_json)
+    elif LLM_PROVIDER == "ollama":
+        return await _call_ollama(system_prompt, messages, temperature, expect_json)
     else:
         return await _call_openai(system_prompt, messages, temperature, expect_json)
 
@@ -126,6 +132,71 @@ async def _call_gemini(
         kwargs["response_format"] = {"type": "json_object"}
 
     logger.info("llm_call_start", provider="gemini", model=GEMINI_MODEL)
+    response = await client.chat.completions.create(**kwargs)
+    content = response.choices[0].message.content or ""
+    logger.info("llm_call_complete", tokens=response.usage.total_tokens if response.usage else 0)
+    return content
+
+
+async def _call_groq(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float,
+    expect_json: bool,
+) -> str:
+    from openai import AsyncOpenAI
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY environment variable not set.")
+
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url="https://api.groq.com/openai/v1"
+    )
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    kwargs = dict(
+        model=GROQ_MODEL,
+        messages=full_messages,
+        temperature=temperature,
+        max_tokens=MAX_TOKENS,
+    )
+    if expect_json:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    logger.info("llm_call_start", provider="groq", model=GROQ_MODEL)
+    response = await client.chat.completions.create(**kwargs)
+    content = response.choices[0].message.content or ""
+    logger.info("llm_call_complete", tokens=response.usage.total_tokens if response.usage else 0)
+    return content
+
+
+async def _call_ollama(
+    system_prompt: str,
+    messages: list[dict],
+    temperature: float,
+    expect_json: bool,
+) -> str:
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(
+        api_key="ollama",
+        base_url="http://localhost:11434/v1"
+    )
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    kwargs = dict(
+        model=OLLAMA_MODEL,
+        messages=full_messages,
+        temperature=temperature,
+    )
+    if expect_json:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    logger.info("llm_call_start", provider="ollama", model=OLLAMA_MODEL)
     response = await client.chat.completions.create(**kwargs)
     content = response.choices[0].message.content or ""
     logger.info("llm_call_complete", tokens=response.usage.total_tokens if response.usage else 0)

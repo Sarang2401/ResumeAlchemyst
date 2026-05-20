@@ -2,6 +2,11 @@
 ResumeAlchemyst — FastAPI Backend Entry Point
 """
 
+# ── Load .env FIRST so every os.getenv() call below sees the values ──────────
+from dotenv import load_dotenv
+load_dotenv()
+# ─────────────────────────────────────────────────────────────────────────────
+
 import asyncio
 from contextlib import asynccontextmanager
 
