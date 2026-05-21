@@ -72,12 +72,12 @@ JOB_MATCH_PROMPT = """You are a senior technical recruiter. Compare the candidat
 {job_description}
 
 Return a JSON response with this exact schema:
-{
+{{
   "fit_score": 75.5,
   "summary": "Brief 2-3 sentence assessment",
   "recommendations": ["Specific recommendation 1", "Specific recommendation 2"],
   "confidence": 0.85
-}
+}}
 
 Rules:
 - fit_score: 0-100, based on skill match rate and experience relevance
