@@ -92,12 +92,12 @@ flowchart TD
     
     Reject --> JSONFormatting
     
-    JSONFormatting --> Output[{
-        "answer": "...",
-        "confidence": 0.95,
-        "source": "resume",
-        "missing_data": []
-    }]
+    JSONFormatting --> Output["{
+        'answer': '...',
+        'confidence': 0.95,
+        'source': 'resume',
+        'missing_data': []
+    }"]
 ```
 
 ### 3.3 Strict Guardrails
